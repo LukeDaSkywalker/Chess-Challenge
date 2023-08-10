@@ -1,54 +1,52 @@
 ﻿using ChessChallenge.API;
-using System;
 
-namespace ChessChallenge.Example
+public class EvilBot : IChessBot
 {
-    // A simple bot that can spot mate in one, and always captures the most valuable piece it can.
-    // Plays randomly otherwise.
-    public class EvilBot : IChessBot
+    public Move Think(Board board, Timer timer)
     {
-        // Piece values: null, pawn, knight, bishop, rook, queen, king
-        int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
-
-        public Move Think(Board board, Timer timer)
+        Move[] EveryMove = board.GetLegalMoves();
+        System.Random rnd = new();
+        foreach (Move move in EveryMove)
         {
-            Move[] allMoves = board.GetLegalMoves();
-
-            // Pick a random move to play if nothing better is found
-            Random rng = new();
-            Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
-            int highestValueCapture = 0;
-
-            foreach (Move move in allMoves)
+            if (huntCheckmate(board, move))
             {
-                // Always play checkmate in one
-                if (MoveIsCheckmate(board, move))
-                {
-                    moveToPlay = move;
-                    break;
-                }
-
-                // Find highest value capture
-                Piece capturedPiece = board.GetPiece(move.TargetSquare);
-                int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
-
-                if (capturedPieceValue > highestValueCapture)
-                {
-                    moveToPlay = move;
-                    highestValueCapture = capturedPieceValue;
-                }
+                return move;
             }
 
-            return moveToPlay;
         }
 
-        // Test if this move gives checkmate
-        bool MoveIsCheckmate(Board board, Move move)
+        return EveryMove[0];
+
+
+        bool huntCheckmate(Board board, Move moveToCheck)
         {
-            board.MakeMove(move);
+            board.MakeMove(moveToCheck);
             bool isMate = board.IsInCheckmate();
-            board.UndoMove(move);
+            /*if (board.IsInCheck() && depth < 4)
+            {
+                foreach(Move move in board.GetLegalMoves())
+                {
+                    board.MakeMove(move);
+                    foreach(Move move2 in board.GetLegalMoves())
+                    {
+                        if (huntCheckmate(board, move2))
+                        {
+                            board.UndoMove(move);
+                            return true;
+                        }
+                    }
+                    board.UndoMove(move);
+                }
+            }*/
+            board.UndoMove(moveToCheck);
             return isMate;
         }
+
+
+        /*float evaluation(Board board, Move moveToEvaluate)
+        {
+            board.MakeMove(moveToEvaluate);
+            return;
+        }*/
     }
 }
