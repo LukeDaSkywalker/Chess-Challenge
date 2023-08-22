@@ -11,9 +11,8 @@ namespace ChessChallenge.Chess
 
         public RepetitionTable()
         {
-            const int size = 1024;
-            hashes = new ulong[size - 1];
-            startIndices = new int[size];
+            hashes = new ulong[256];
+            startIndices = new int[hashes.Length + 1];
         }
 
         public void Init(Board board)
@@ -37,8 +36,8 @@ namespace ChessChallenge.Chess
             {
                 hashes[count] = hash;
                 startIndices[count + 1] = reset ? count : startIndices[count];
-                count++;
             }
+            count++;
         }
 
         public void TryPop()

@@ -11,17 +11,17 @@ public class MyBot : IChessBot
         System.Random rnd = new();
         int depth = 0;
         float bestEvaluation = -100;
-        int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0 };
+        int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0};
         Move evaluationMove = Move.NullMove;
-        foreach (Move move in EveryMove)
+        foreach(Move move in EveryMove)
         {
             //depth = 0;
-            if (huntCheckmate(board, move))
+            if(huntCheckmate(board, move))
             {
                 return move;
             }
         }
-        foreach (Move move in captureMoves)
+        foreach(Move move in captureMoves)
         {
             if (bestEvaluation < evaluation(board, move))
             {
@@ -29,7 +29,7 @@ public class MyBot : IChessBot
                 evaluationMove = move;
             }
         }
-
+        
         if (!evaluationMove.IsNull)
         {
             return evaluationMove;
@@ -44,7 +44,7 @@ public class MyBot : IChessBot
             bool isCheck = board.IsInCheck();
             depth++;
             bool isMate = board.IsInCheckmate();
-            Trace.WriteLine
+            Trace.WriteLine("test");
             /*if (isCheck && !isMate && depth < 4)
             {
                 huntCheckmate(board, moveToCheck);
