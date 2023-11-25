@@ -1,83 +1,71 @@
 ﻿using ChessChallenge.API;
 using System;
-using System.Diagnostics;
 
 public class MyBot : IChessBot
 {
     public Move Think(Board board, Timer timer)
     {
-        Move[] EveryMove = board.GetLegalMoves();
-        Move[] captureMoves = board.GetLegalMoves(true);
-        System.Random rnd = new();
-        int depth = 0;
-        float bestEvaluation = -100;
-        int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0};
-        Move evaluationMove = Move.NullMove;
-        foreach(Move move in EveryMove)
-        {
-            //depth = 0;
-            if(huntCheckmate(board, move))
-            {
-                return move;
-            }
-        }
-        foreach(Move move in captureMoves)
-        {
-            if (bestEvaluation < evaluation(board, move))
-            {
-                bestEvaluation = evaluation(board, move);
-                evaluationMove = move;
-            }
-        }
-        
-        if (!evaluationMove.IsNull)
-        {
-            return evaluationMove;
-        }
-
-        return EveryMove[rnd.Next(EveryMove.Length)];
+        Move[] moves = board.GetLegalMoves();
+        int[] values = { 0, 1, 3, 3, 5, 9, 0 };
+        PieceList[] pieceList = board.GetAllPieceLists();
+        float eval = 0;
+        float highestEval = 99;
+        Move bestMove = moves[0];
+        int[] pawnTable = {0,  0,  0,  0,  0,  0,  0,  0,
+50, 50, 50, 50, 50, 50, 50, 50,
+10, 10, 20, 30, 30, 20, 10, 10,
+ 5,  5, 10, 25, 25, 10,  5,  5,
+ 0,  0,  0, 20, 20,  0,  0,  0,
+ 5, -5,-10,  0,  0,-10, -5,  5,
+ 5, 10, 10,-20,-20, 10, 10,  5,
+ 0,  0,  0,  0,  0,  0,  0,  0};
 
 
-        bool huntCheckmate(Board board, Move moveToCheck)
+        if (board.IsWhiteToMove)
         {
-            board.MakeMove(moveToCheck);
-            bool isCheck = board.IsInCheck();
-            depth++;
-            bool isMate = board.IsInCheckmate();
-            Trace.WriteLine("test");
-            /*if (isCheck && !isMate && depth < 4)
+            highestEval = -99;
+        }
+
+        foreach (Move move in moves)
+        {
+            switch (board.IsWhiteToMove)
             {
-                huntCheckmate(board, moveToCheck);
-            }
-            if (board.IsInCheck() && depth < 4)
-            {
-                foreach(Move move in board.GetLegalMoves())
-                {
-                    board.MakeMove(move);
-                    foreach(Move move2 in board.GetLegalMoves())
+                case true:
+                    if (highestEval < evaluation(board, move))
                     {
-                        if (huntCheckmate(board, move2))
-                        {
-                            board.UndoMove(move);
-                            return true;
-                        }
+                        highestEval = evaluation(board, move);
+                        bestMove = move;
                     }
-                    board.UndoMove(move);
-                }
-            }*/
-            board.UndoMove(moveToCheck);
-            depth--;
-            return isMate;
+                    break;
+                case false:
+                    if (evaluation(board, move) < highestEval)
+                    {
+                        highestEval = evaluation(board, move);
+                        bestMove = move;
+                    }
+                    break;
+            }
         }
-
 
         float evaluation(Board board, Move moveToEvaluate)
         {
-            bool attacked = board.SquareIsAttackedByOpponent(moveToEvaluate.TargetSquare);
             board.MakeMove(moveToEvaluate);
+            eval = 0;
+            foreach (PieceList pieceList2 in pieceList)
+            {
+                /*if (pieceList2.IsWhitePieceList)
+                {
+                    eval += pieceList2.Count * values[(int)pieceList2.TypeOfPieceInList];
+                }
+                else
+                {
+                    eval -= pieceList2.Count * values[(int)pieceList2.TypeOfPieceInList];
+                }*/
+                
+            }
             board.UndoMove(moveToEvaluate);
-
-            return pieceValues[(int)moveToEvaluate.CapturePieceType] - pieceValues[(int)moveToEvaluate.MovePieceType];
+            return eval;
         }
+        return bestMove;
     }
 }
