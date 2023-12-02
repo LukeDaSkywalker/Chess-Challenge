@@ -1,8 +1,6 @@
 ﻿using ChessChallenge.API;
-using Raylib_cs;
 using System;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 
 public class MyBot : IChessBot
 {
@@ -59,32 +57,55 @@ public class MyBot : IChessBot
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
         float best = 0;
-
-        Move minimax(Board board, int depth, Move theMove)
+        Board board2 = board;
+        minimaxClass minimax(Board board, int depth)
         {
+            minimaxClass result = new minimaxClass();
             if (depth == 0)
             {
-                return ;
+                result.evaluation = evaluation(board);
+                Console.WriteLine(result.evaluation);
+                return result;
             }
+            float highestEval = 1000;
             if (board.IsWhiteToMove)
             {
-                float highestEval = -1000;
-                foreach(Move move in board.GetLegalMoves())
+                best = -1000;
+                highestEval = -1000;
+                foreach (Move move in board.GetLegalMoves())
                 {
-                    board.MakeMove(move);
-                    float val = minimax(board, depth - 1);
-                    if(val > best)
+                    board2.MakeMove(move);
+                    float val = minimax(board2, depth - 1).evaluation;
+                    if (val > best)
                     {
                         best = val;
+                        result.move = move;
                     }
+                    board2.UndoMove(move);
                 }
+                highestEval = best;
             }
             else
             {
-                float highestEval = 1000;
+                best = 1000;
+                highestEval = 1000;
+                foreach (Move move in board.GetLegalMoves())
+                {
+                    board2.MakeMove(move);
+                    float val = minimax(board2, depth - 1).evaluation;
+                    if (val < best)
+                    {
+                        best = val;
+                        result.move = move;
+                    }
+                    board2.UndoMove(move);
+                }
+                highestEval = best;
             }
-            return;
+            result.evaluation = highestEval;
+            return result;
         }
+
 
 
         float evaluation(Board board)
@@ -158,6 +179,11 @@ public class MyBot : IChessBot
             }
             return (float)eval;
         }
-        return;
+        return minimax(board, 1).move;
+    }
+    class minimaxClass
+    {
+        public Move move;
+        public float evaluation;
     }
 }
