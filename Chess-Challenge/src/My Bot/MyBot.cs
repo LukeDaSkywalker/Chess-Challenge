@@ -56,17 +56,23 @@ public class MyBot : IChessBot
 -10,-20,-20,-20,-20,-20,-20,-10,
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
-        Move bestRootMove = new Move();
+        Move bestRootMove = new();
         int depthdepth = 3;
+        int quidepth = 3;
         int movestoconsider = 0;
-        
-        
+        int movestoconsider2 = 0;
+
         float alphabeta(Board board, int depth, float alpha, float beta)
         {
-            if (depth == 0) return Quiesce(alpha, beta, board);
+            if (depth == 0) return Quiesce(alpha, beta, board, quidepth);
             foreach (Move move in board.GetLegalMoves())
             {
                 board.MakeMove(move);
+                if (board.IsRepeatedPosition())
+                {
+                    board.UndoMove(move);
+                    continue;
+                }
                 movestoconsider++;
                 float score = -alphabeta(board, depth - 1, -beta, -alpha);
                 board.UndoMove(move);
@@ -158,15 +164,22 @@ public class MyBot : IChessBot
             }
             return (float)eval;
         }
-        float Quiesce(float alpha, float beta, Board board)
+        float Quiesce(float alpha, float beta, Board board, int depth)
         {
             float stand_pat = evaluation(board);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
+            if (depth == 0) return alpha;
             foreach(Move move in board.GetLegalMoves(true))
             {
+                if (board.IsRepeatedPosition())
+                {
+                    board.UndoMove(move);
+                    continue;
+                }
                 board.MakeMove(move);
-                float score = -Quiesce(-beta, -alpha, board);
+                movestoconsider2++;
+                float score = -Quiesce(-beta, -alpha, board, depth - 1);
                 board.UndoMove(move);
                 if (score >= beta) return beta;
                 if (score > alpha) alpha = score;
@@ -174,8 +187,9 @@ public class MyBot : IChessBot
             return alpha;
             
         }
-        alphabeta(board, depthdepth, -1000, 1000);
-        Console.WriteLine(movestoconsider);
+        Console.WriteLine("Quiesce Eval:" + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
+        Console.WriteLine("alphabeta: " + movestoconsider);
+        Console.WriteLine("quiesce: " + movestoconsider2);
         return bestRootMove;
     }
 }
