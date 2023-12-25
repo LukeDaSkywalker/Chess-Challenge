@@ -57,25 +57,28 @@ public class MyBot : IChessBot
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
         Move bestRootMove = new Move();
-        int depthdepth = 4;
+        int depthdepth = 5;
         
         
-        float negamax(Board board, int depth)
+        float alphabeta(Board board, int depth, float alpha, float beta)
         {
             if (depth == 0) return evaluation(board);
-            float best = -1000;
             foreach (Move move in board.GetLegalMoves())
             {
                 board.MakeMove(move);
-                float score = -negamax(board, depth - 1);
-                if (score > best)
+                float score = -alphabeta(board, depth - 1, -beta, -alpha);
+                board.UndoMove(move);
+                if (score >= beta)
                 {
-                    best = score;
+                    return beta;
+                }
+                if (score > alpha)
+                {
+                    alpha = score;
                     if (depth == depthdepth) bestRootMove = move;
                 }
-                board.UndoMove(move);
             }
-            return best;
+            return alpha;
         }
 
         float evaluation(Board board)   
@@ -153,7 +156,7 @@ public class MyBot : IChessBot
             }
             return (float)eval;
         }
-        negamax(board, depthdepth);
+        alphabeta(board, depthdepth, -1000, 1000);
         return bestRootMove;
     }
 }
