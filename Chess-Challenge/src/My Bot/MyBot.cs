@@ -6,7 +6,7 @@ public class MyBot : IChessBot
 {
     public Move Think(Board board, Timer timer)
     {
-        int[] values = { 0, 1, 3, 3, 5, 9, 0 };
+        int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0 };
         decimal eval = 0;
         int[] pawnTable = {0,  0,  0,  0,  0,  0,  0,  0,
 50, 50, 50, 50, 50, 50, 50, 50,
@@ -56,59 +56,29 @@ public class MyBot : IChessBot
 -10,-20,-20,-20,-20,-20,-20,-10,
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
-        float best = 0;
-        Board board2 = board;
-        minimaxClass minimax(Board board, int depth)
+        Move bestRootMove = new Move();
+        int depthdepth = 4;
+        
+        
+        float negamax(Board board, int depth)
         {
-            minimaxClass result = new minimaxClass();
-            if (depth == 0)
+            if (depth == 0) return evaluation(board);
+            float best = -1000;
+            foreach (Move move in board.GetLegalMoves())
             {
-                result.evaluation = evaluation(board);
-                Console.WriteLine(result.evaluation);
-                return result;
-            }
-            float highestEval = 1000;
-            if (board.IsWhiteToMove)
-            {
-                best = -1000;
-                highestEval = -1000;
-                foreach (Move move in board.GetLegalMoves())
+                board.MakeMove(move);
+                float score = -negamax(board, depth - 1);
+                if (score > best)
                 {
-                    board2.MakeMove(move);
-                    float val = minimax(board2, depth - 1).evaluation;
-                    if (val > best)
-                    {
-                        best = val;
-                        result.move = move;
-                    }
-                    board2.UndoMove(move);
+                    best = score;
+                    if (depth == depthdepth) bestRootMove = move;
                 }
-                highestEval = best;
+                board.UndoMove(move);
             }
-            else
-            {
-                best = 1000;
-                highestEval = 1000;
-                foreach (Move move in board.GetLegalMoves())
-                {
-                    board2.MakeMove(move);
-                    float val = minimax(board2, depth - 1).evaluation;
-                    if (val < best)
-                    {
-                        best = val;
-                        result.move = move;
-                    }
-                    board2.UndoMove(move);
-                }
-                highestEval = best;
-            }
-            result.evaluation = highestEval;
-            return result;
+            return best;
         }
 
-
-
-        float evaluation(Board board)
+        float evaluation(Board board)   
         {
             eval = 0;
             PieceList[] pieceList = board.GetAllPieceLists();
@@ -118,7 +88,7 @@ public class MyBot : IChessBot
                 {
                     if (pieceList2.IsWhitePieceList)
                     {
-                        eval += values[(int)pieceList2.GetPiece(i).PieceType];
+                        eval += pieceValues[(int)pieceList2.GetPiece(i).PieceType];
                         switch ((int)pieceList2.GetPiece(i).PieceType)
                         {
                             case 1:
@@ -143,7 +113,7 @@ public class MyBot : IChessBot
                     }
                     else
                     {
-                        eval -= values[(int)pieceList2.GetPiece(i).PieceType];
+                        eval -= pieceValues[(int)pieceList2.GetPiece(i).PieceType];
                         switch ((int)pieceList2.GetPiece(i).PieceType)
                         {
                             case 1:
@@ -177,13 +147,13 @@ public class MyBot : IChessBot
                 }*/
 
             }
+            if (!board.IsWhiteToMove)
+            {
+                eval = -1 * eval;
+            }
             return (float)eval;
         }
-        return minimax(board, 1).move;
-    }
-    class minimaxClass
-    {
-        public Move move;
-        public float evaluation;
+        negamax(board, depthdepth);
+        return bestRootMove;
     }
 }
