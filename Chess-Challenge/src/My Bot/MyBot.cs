@@ -57,8 +57,8 @@ public class MyBot : IChessBot
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
         Move bestRootMove = new();
-        int depthdepth = 1;
-        int quidepth = 0;
+        int depthdepth = 4;
+        int quidepth = 2;
         int movestoconsider = 0;
         int movestoconsider2 = 0;
         float score = new();
@@ -71,6 +71,11 @@ public class MyBot : IChessBot
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
                 {
+                    if (depth == depthdepth)
+                    {
+                        bestRootMove = move;
+                        return float.MaxValue;
+                    }
                     score = float.MaxValue;
                 }
                 else
@@ -197,7 +202,12 @@ public class MyBot : IChessBot
             return alpha;
             
         }
-        Console.WriteLine("Quiesce Eval:" + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
+        if (BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) < 10)
+        {
+            quidepth = 100;
+            depthdepth = 7;
+        }
+        Console.WriteLine("Quiesce Eval: " + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
         Console.WriteLine("alphabeta: " + movestoconsider);
         Console.WriteLine("quiesce: " + movestoconsider2);
         return bestRootMove;
