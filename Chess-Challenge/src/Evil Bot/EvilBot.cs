@@ -1,6 +1,7 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Diagnostics;
+using static System.Formats.Asn1.AsnWriter;
 
 public class EvilBot : IChessBot
 {
@@ -58,6 +59,7 @@ public class EvilBot : IChessBot
  20, 30, 10,  0,  0, 10, 30, 20};
         Move bestRootMove = new Move();
         int depthdepth = 3;
+        float score = new();
 
 
         float alphabeta(Board board, int depth, float alpha, float beta)
@@ -66,7 +68,26 @@ public class EvilBot : IChessBot
             foreach (Move move in board.GetLegalMoves())
             {
                 board.MakeMove(move);
-                float score = -alphabeta(board, depth - 1, -beta, -alpha);
+                if (board.IsInCheckmate())
+                {
+                    if (depth == depthdepth)
+                    {
+                        bestRootMove = move;
+                        return float.MaxValue;
+                    }
+                    score = float.MaxValue;
+                }
+                else
+                {
+                    if (board.IsDraw())
+                    {
+                        score = 0;
+                    }
+                    else
+                    {
+                        score = -alphabeta(board, depth - 1, -beta, -alpha);
+                    }
+                }
                 board.UndoMove(move);
                 if (score >= beta)
                 {
@@ -156,7 +177,7 @@ public class EvilBot : IChessBot
             }
             return (float)eval;
         }
-        alphabeta(board, depthdepth, -1000, 1000);
+        alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity);
         return bestRootMove;
     }
 }

@@ -48,7 +48,7 @@ public class MyBot : IChessBot
 -10,  5,  5,  5,  5,  5,  0,-10,
 -10,  0,  5,  0,  0,  0,  0,-10,
 -20,-10,-10, -5, -5,-10,-10,-20};
-        int[] kingTable = {-30,-40,-40,-50,-50,-40,-40,-30,
+        int[] kingTableMid = {-30,-40,-40,-50,-50,-40,-40,-30,
 -30,-40,-40,-50,-50,-40,-40,-30,
 -30,-40,-40,-50,-50,-40,-40,-30,
 -30,-40,-40,-50,-50,-40,-40,-30,
@@ -56,8 +56,17 @@ public class MyBot : IChessBot
 -10,-20,-20,-20,-20,-20,-20,-10,
  20, 20,  0,  0,  0,  0, 20, 20,
  20, 30, 10,  0,  0, 10, 30, 20};
+        int[] kingTableEnd = {-50,-40,-30,-20,-20,-30,-40,-50,
+-30,-20,-10,  0,  0,-10,-20,-30,
+-30,-10, 20, 30, 30, 20,-10,-30,
+-30,-10, 30, 40, 40, 30,-10,-30,
+-30,-10, 30, 40, 40, 30,-10,-30,
+-30,-10, 20, 30, 30, 20,-10,-30,
+-30,-30,  0,  0,  0,  0,-30,-30,
+-50,-30,-30,-30,-30,-30,-30,-50};
+        int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
         Move bestRootMove = new();
-        int depthdepth = 4;
+        int depthdepth = 3;
         int quidepth = 2;
         int movestoconsider = 0;
         int movestoconsider2 = 0;
@@ -133,7 +142,13 @@ public class MyBot : IChessBot
                                 eval += queenTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
                                 break;
                             case 6:
-                                eval += kingTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                if (minorPiecesAmount <= 4)
+                                {
+                                    eval += kingTableEnd[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                } else
+                                {
+                                    eval += kingTableMid[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                }
                                 break;
                         }
                     }
@@ -158,7 +173,13 @@ public class MyBot : IChessBot
                                 eval -= queenTable[pieceList2.GetPiece(i).Square.Index] / 100m;
                                 break;
                             case 6:
-                                eval -= kingTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                if (minorPiecesAmount <= 4)
+                                {
+                                    eval -= kingTableEnd[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                } else
+                                {
+                                    eval -= kingTableMid[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                }
                                 break;
                         }
                     }
@@ -204,8 +225,8 @@ public class MyBot : IChessBot
         }
         if (BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) < 10)
         {
-            quidepth = 100;
-            depthdepth = 7;
+            quidepth = 10;
+            depthdepth = 6;
         }
         Console.WriteLine("Quiesce Eval: " + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
         Console.WriteLine("alphabeta: " + movestoconsider);
