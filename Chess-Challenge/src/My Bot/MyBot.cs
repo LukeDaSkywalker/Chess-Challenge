@@ -71,6 +71,7 @@ public class MyBot : IChessBot
         int movestoconsider = 0;
         int movestoconsider2 = 0;
         float score = new();
+        int endKingTableAmount = 6;
 
         float alphabeta(Board board, int depth, float alpha, float beta)
         {
@@ -95,7 +96,7 @@ public class MyBot : IChessBot
                     }
                     else
                     {
-                    score = -alphabeta(board, depth - 1, -beta, -alpha);
+                        score = -alphabeta(board, depth - 1, -beta, -alpha);
                     }
                 }
                 board.UndoMove(move);
@@ -113,7 +114,7 @@ public class MyBot : IChessBot
             return alpha;
         }
 
-        float evaluation(Board board)   
+        float evaluation(Board board)
         {
             eval = 0;
             PieceList[] pieceList = board.GetAllPieceLists();
@@ -142,10 +143,11 @@ public class MyBot : IChessBot
                                 eval += queenTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
                                 break;
                             case 6:
-                                if (minorPiecesAmount <= 4)
+                                if (minorPiecesAmount <= endKingTableAmount)
                                 {
                                     eval += kingTableEnd[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
-                                } else
+                                }
+                                else
                                 {
                                     eval += kingTableMid[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
                                 }
@@ -173,10 +175,11 @@ public class MyBot : IChessBot
                                 eval -= queenTable[pieceList2.GetPiece(i).Square.Index] / 100m;
                                 break;
                             case 6:
-                                if (minorPiecesAmount <= 4)
+                                if (minorPiecesAmount <= endKingTableAmount)
                                 {
                                     eval -= kingTableEnd[pieceList2.GetPiece(i).Square.Index] / 100m;
-                                } else
+                                }
+                                else
                                 {
                                     eval -= kingTableMid[pieceList2.GetPiece(i).Square.Index] / 100m;
                                 }
@@ -206,7 +209,7 @@ public class MyBot : IChessBot
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
             if (depth == 0) return alpha;
-            foreach(Move move in board.GetLegalMoves(true))
+            foreach (Move move in board.GetLegalMoves(true))
             {
                 if (board.IsRepeatedPosition())
                 {
@@ -221,13 +224,14 @@ public class MyBot : IChessBot
                 if (score > alpha) alpha = score;
             }
             return alpha;
-            
+
         }
         if (BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) < 10)
         {
             quidepth = 10;
             depthdepth = 6;
         }
+        Console.WriteLine("V1.3");
         Console.WriteLine("Quiesce Eval: " + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
         Console.WriteLine("alphabeta: " + movestoconsider);
         Console.WriteLine("quiesce: " + movestoconsider2);
