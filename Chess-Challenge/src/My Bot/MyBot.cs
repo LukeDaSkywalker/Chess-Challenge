@@ -68,7 +68,7 @@ public class MyBot : IChessBot
         int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
         Move bestRootMove = new();
         int depthdepth = 0;
-        int quidepth = 0;
+        int quidepth = int.MaxValue;
         int movestoconsider = 0;
         int movestoconsider2 = 0;
         float score = new();
@@ -77,7 +77,7 @@ public class MyBot : IChessBot
         float alphabeta(Board board, int depth, float alpha, float beta)
         {
             if (depth == 0) return Quiesce(alpha, beta, board, quidepth);
-            foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove)))
+            foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
@@ -85,7 +85,7 @@ public class MyBot : IChessBot
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
-                        return float.MaxValue;
+                        Convert.ToUInt32(-1);
                     }
                     score = float.MaxValue;
                 }
@@ -241,12 +241,12 @@ public class MyBot : IChessBot
             return alpha;
 
         }
-        Console.WriteLine("V1.3");
+        Console.WriteLine("V1.41");
         try
         {
             for (; ; )
             {
-                Console.WriteLine(alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity));
+                alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity);
                 Console.WriteLine(depthdepth);
             }
         }
