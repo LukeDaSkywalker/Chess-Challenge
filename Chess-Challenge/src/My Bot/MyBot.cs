@@ -1,6 +1,7 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 public class MyBot : IChessBot
 {
@@ -66,8 +67,8 @@ public class MyBot : IChessBot
 -50,-30,-30,-30,-30,-30,-30,-50};
         int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
         Move bestRootMove = new();
-        int depthdepth = 3;
-        int quidepth = 2;
+        int depthdepth = 0;
+        int quidepth = 0;
         int movestoconsider = 0;
         int movestoconsider2 = 0;
         float score = new();
@@ -76,7 +77,7 @@ public class MyBot : IChessBot
         float alphabeta(Board board, int depth, float alpha, float beta)
         {
             if (depth == 0) return Quiesce(alpha, beta, board, quidepth);
-            foreach (Move move in board.GetLegalMoves())
+            foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove)))
             {
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
@@ -110,6 +111,7 @@ public class MyBot : IChessBot
                     alpha = score;
                     if (depth == depthdepth) bestRootMove = move;
                 }
+                Convert.ToUInt32(timer.MillisecondsRemaining - 30 * timer.MillisecondsElapsedThisTurn);
             }
             return alpha;
         }
@@ -197,6 +199,19 @@ public class MyBot : IChessBot
                 }*/
 
             }
+            /*if (minorPiecesAmount <= 4)
+            {
+                Square whiteKingSquare = board.GetKingSquare(true);
+                Square blackKingSquare = board.GetKingSquare(false);
+                int whiteKingDisToCenterFile = Math.Max(3 - whiteKingSquare.File, whiteKingSquare.File - 4);
+                int whiteKingDisToCenterRank = Math.Max(3 - whiteKingSquare.Rank, whiteKingSquare.Rank - 4);
+                int whiteKingDisFromCenter = whiteKingDisToCenterRank + whiteKingDisToCenterFile;
+                int blackKingDisToCenterFile = Math.Max(3 - blackKingSquare.File, blackKingSquare.File - 4);
+                int blackKingDisToCenterRank = Math.Max(3 - blackKingSquare.Rank, blackKingSquare.Rank - 4);
+                int blackKingDisFromCenter = blackKingDisToCenterRank + blackKingDisToCenterFile;
+                float kingEval = whiteKingDisFromCenter - blackKingDisFromCenter;
+            }*/
+            //Console.WriteLine(eval);
             if (!board.IsWhiteToMove)
             {
                 eval = -1 * eval;
@@ -226,15 +241,16 @@ public class MyBot : IChessBot
             return alpha;
 
         }
-        if (BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) < 10)
-        {
-            quidepth = 10;
-            depthdepth = 6;
-        }
         Console.WriteLine("V1.3");
-        Console.WriteLine("Quiesce Eval: " + alphabeta(board, depthdepth, float.NegativeInfinity, float.PositiveInfinity));
-        Console.WriteLine("alphabeta: " + movestoconsider);
-        Console.WriteLine("quiesce: " + movestoconsider2);
+        try
+        {
+            for (; ; )
+            {
+                Console.WriteLine(alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity));
+                Console.WriteLine(depthdepth);
+            }
+        }
+        catch { }
         return bestRootMove;
     }
 }
