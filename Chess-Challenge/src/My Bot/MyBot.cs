@@ -1,10 +1,19 @@
 ﻿using ChessChallenge.API;
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 public class MyBot : IChessBot
 {
+    Transposition[] tpt = new Transposition[0x7FFFFF + 1];
+    public int TranspositionNum = 0;
+    struct Transposition
+    {
+        public ulong zobristHash;
+        //public Move move;
+        public float evaluation;
+        public sbyte depth;
+        public byte flag;
+    }
     public Move Think(Board board, Timer timer)
     {
         int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0 };
@@ -68,15 +77,25 @@ public class MyBot : IChessBot
         int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
         Move bestRootMove = new();
         int depthdepth = 0;
-        int quidepth = int.MaxValue;
         int movestoconsider = 0;
         int movestoconsider2 = 0;
         float score = new();
         int endKingTableAmount = 6;
+        //Move bestMove = new();
+        int evaluatedPos = 0;
 
         float alphabeta(Board board, int depth, float alpha, float beta)
         {
-            if (depth == 0) return Quiesce(alpha, beta, board, quidepth);
+            float startingAlpha = alpha;
+            evaluatedPos++;
+            ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
+            if (tp.zobristHash == board.ZobristKey && tp.depth > depth)
+            {
+                if (tp.flag == 1) return tp.evaluation;
+                if (tp.flag == 2 && tp.evaluation >= beta) return tp.evaluation;
+                if (tp.flag == 3 && tp.evaluation <= alpha) return tp.evaluation;
+            }
+            if (depth == 0) return Quiesce(alpha, beta, board);
             foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
@@ -85,6 +104,7 @@ public class MyBot : IChessBot
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
+                        Console.WriteLine(bestRootMove);
                         Convert.ToUInt32(-1);
                     }
                     score = float.MaxValue;
@@ -109,10 +129,27 @@ public class MyBot : IChessBot
                 if (score > alpha)
                 {
                     alpha = score;
-                    if (depth == depthdepth) bestRootMove = move;
+                    //bestMove = move;
+                    if (depth == depthdepth)
+                    {
+                        bestRootMove = move;
+                        //Console.WriteLine(bestRootMove);
+                    }
                 }
                 Convert.ToUInt32(timer.MillisecondsRemaining - 30 * timer.MillisecondsElapsedThisTurn);
             }
+            TranspositionNum++;
+            tp.evaluation = alpha;
+            tp.zobristHash = board.ZobristKey;
+            //tp.move = bestMove; 
+            if (alpha <= startingAlpha)
+                tp.flag = 3; //upper bound
+            else if (alpha >= beta)
+            {
+                tp.flag = 2; //lower bound
+            }
+            else tp.flag = 1;
+            tp.depth = (sbyte)depth;
             return alpha;
         }
 
@@ -218,12 +255,11 @@ public class MyBot : IChessBot
             }
             return (float)eval;
         }
-        float Quiesce(float alpha, float beta, Board board, int depth)
+        float Quiesce(float alpha, float beta, Board board)
         {
             float stand_pat = evaluation(board);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
-            if (depth == 0) return alpha;
             foreach (Move move in board.GetLegalMoves(true))
             {
                 if (board.IsRepeatedPosition())
@@ -233,7 +269,7 @@ public class MyBot : IChessBot
                 }
                 board.MakeMove(move);
                 movestoconsider2++;
-                float score = -Quiesce(-beta, -alpha, board, depth - 1);
+                float score = -Quiesce(-beta, -alpha, board);
                 board.UndoMove(move);
                 if (score >= beta) return beta;
                 if (score > alpha) alpha = score;
@@ -241,16 +277,22 @@ public class MyBot : IChessBot
             return alpha;
 
         }
-        Console.WriteLine("V1.41");
+
+        Console.WriteLine("V1.5");
         try
         {
             for (; ; )
             {
                 alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity);
-                Console.WriteLine(depthdepth);
+                //Console.WriteLine(depthdepth);
             }
         }
-        catch { }
-        return bestRootMove;
+        catch
+        {
+            Console.WriteLine(evaluatedPos);
+            Console.WriteLine(depthdepth);
+            Console.WriteLine(TranspositionNum);
+            return bestRootMove;
+        }
     }
 }
