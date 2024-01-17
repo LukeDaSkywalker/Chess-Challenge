@@ -80,7 +80,7 @@ public class MyBot : IChessBot
         int evaluatedPos = 0;
 
 
-        float alphabeta(Board board, int depth, float alpha, float beta, bool root)
+        float alphabeta(Board board, int depth, float alpha, float beta, bool root, bool lastMoveWasNotNull)
         {
             evaluatedPos++;
             float startingAlpha = alpha;
@@ -94,7 +94,15 @@ public class MyBot : IChessBot
                     return tp.evaluation;
                 }
             }
-            if (depth == 0) return Quiesce(alpha, beta, board);
+            if (depth == 0) return Quiesce(alpha, beta, board); 
+            if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 3)
+            {
+                board.TrySkipTurn();
+                int R = 3;
+                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, false);
+                board.UndoSkipTurn();
+                if (nullSearchScore > beta) return nullSearchScore;
+            }
             foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
@@ -114,7 +122,7 @@ public class MyBot : IChessBot
                 }
                 else
                 {
-                    score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                    score = -alphabeta(board, depth - 1, -beta, -alpha, false, true);
 
                 }
                 board.UndoMove(move);
@@ -277,14 +285,14 @@ public class MyBot : IChessBot
         {
             for (; ; )
             {
-                alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity, true);
+                alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity, true, true);
                 //Console.WriteLine(depthdepth);
             }
         }
         catch
         {
             //Console.WriteLine(evaluatedPos);
-            //Console.WriteLine(depthdepth);
+            Console.WriteLine(depthdepth);
             return bestRootMove;
         }
     }
