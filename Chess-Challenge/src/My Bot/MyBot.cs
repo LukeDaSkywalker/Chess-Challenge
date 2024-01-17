@@ -99,7 +99,7 @@ public class MyBot : IChessBot
             {
                 board.TrySkipTurn();
                 int R = 3;
-                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, lastMoveWasNotNull);
+                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, false);
                 board.UndoSkipTurn();
                 if (nullSearchScore > beta)
                 {
@@ -126,7 +126,7 @@ public class MyBot : IChessBot
                 }
                 else
                 {
-                    score = -alphabeta(board, depth - 1, -beta, -alpha, false, true);
+                    score = -alphabeta(board, depth - 1, -beta, -alpha, false, lastMoveWasNotNull);
 
                 }
                 board.UndoMove(move);
