@@ -99,9 +99,13 @@ public class MyBot : IChessBot
             {
                 board.TrySkipTurn();
                 int R = 3;
-                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, false);
+                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, lastMoveWasNotNull);
                 board.UndoSkipTurn();
-                if (nullSearchScore > beta) return nullSearchScore;
+                if (nullSearchScore > beta)
+                {
+                    Console.WriteLine("get pruned");
+                    return nullSearchScore;
+                }
             }
             foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
@@ -280,7 +284,7 @@ public class MyBot : IChessBot
 
         }
 
-        Console.WriteLine("V1.7");
+        Console.WriteLine("V1.8");
         try
         {
             for (; ; )
