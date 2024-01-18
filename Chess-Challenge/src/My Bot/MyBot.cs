@@ -99,11 +99,10 @@ public class MyBot : IChessBot
             {
                 board.TrySkipTurn();
                 int R = 3;
-                float nullSearchScore = -alphabeta(board, depth - R, -beta, -beta + 1, false, false);
+                float nullSearchScore = -alphabeta(board, depth - R, -beta, 1-beta, false, false);
                 board.UndoSkipTurn();
-                if (nullSearchScore > beta)
+                if (nullSearchScore >= beta)
                 {
-                    Console.WriteLine("get pruned");
                     return nullSearchScore;
                 }
             }
@@ -289,7 +288,7 @@ public class MyBot : IChessBot
         {
             for (; ; )
             {
-                alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity, true, true);
+                alphabeta(board, ++depthdepth, -10000000, 10000000, true, true);
                 //Console.WriteLine(depthdepth);
             }
         }
