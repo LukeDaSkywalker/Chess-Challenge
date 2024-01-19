@@ -86,7 +86,6 @@ public class MyBot : IChessBot
             float startingAlpha = alpha;
             float bestEval = float.MinValue;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
-
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 if (tp.flag == 1 || tp.flag == 2 && tp.evaluation >= beta || tp.flag == 3 && tp.evaluation <= alpha)
@@ -95,14 +94,15 @@ public class MyBot : IChessBot
                 }
             }
             if (depth == 0) return Quiesce(alpha, beta, board); 
-            if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 3)
+            if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2)
             {
                 board.TrySkipTurn();
-                int R = 3;
+                int R = 2;
                 float nullSearchScore = -alphabeta(board, depth - R, -beta, 1-beta, false, false);
                 board.UndoSkipTurn();
                 if (nullSearchScore >= beta)
                 {
+                    Console.WriteLine("get pruned");
                     return nullSearchScore;
                 }
             }
@@ -148,9 +148,9 @@ public class MyBot : IChessBot
             tp.evaluation = bestEval;
             tp.zobristHash = board.ZobristKey;
             if (alpha <= startingAlpha)
-                tp.flag = 3; //upper bound
+                tp.flag = 3;
             else if (alpha >= beta)
-                tp.flag = 2; //lower bound
+                tp.flag = 2;
             else tp.flag = 1;
             tp.depth = (sbyte)depth;
             return alpha;
@@ -161,7 +161,7 @@ public class MyBot : IChessBot
             eval = 0;
             if (board.IsInCheckmate())
             {
-                eval = 1000000 - (depthdepth - depth);
+                eval = 10000 - (depthdepth - depth);
             }
             else if (board.IsDraw())
             {
@@ -288,7 +288,7 @@ public class MyBot : IChessBot
         {
             for (; ; )
             {
-                alphabeta(board, ++depthdepth, -10000000, 10000000, true, true);
+                alphabeta(board, ++depthdepth, -100000, 100000, true, true);
                 //Console.WriteLine(depthdepth);
             }
         }
