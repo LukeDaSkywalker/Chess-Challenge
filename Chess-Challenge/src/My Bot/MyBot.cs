@@ -84,7 +84,7 @@ public class MyBot : IChessBot
         {
             evaluatedPos++;
             int startingAlpha = alpha;
-            int bestEval = int.MinValue;
+            int bestEval = -100000;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
@@ -93,7 +93,9 @@ public class MyBot : IChessBot
                     return tp.evaluation;
                 }
             }
-            if (depth == 0) return Quiesce(alpha, beta, board); 
+            if (depth == 0) return Quiesce(alpha, beta, board);
+            int s = evaluation(board, depth);
+            if (depth < 7 && s - 60 * depth >= beta) return s;
             if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2)
             {
                 board.TrySkipTurn();
@@ -273,6 +275,13 @@ public class MyBot : IChessBot
             if (stand_pat > alpha) alpha = stand_pat;
             foreach (Move move in board.GetLegalMoves(true))
             {
+                int delta = 975;
+                if (move.IsPromotion) delta += 775;
+                if (stand_pat < alpha - delta)
+                {
+                    //Console.WriteLine("get pruned");
+                    return alpha;
+                }
                 board.MakeMove(move);
                 int score = -Quiesce(-beta, -alpha, board);
                 board.UndoMove(move);
@@ -288,14 +297,14 @@ public class MyBot : IChessBot
         {
             for (; ; )
             {
-                alphabeta(board, ++depthdepth, -100000, 100000, true, true)
-                //Console.WriteLine(depthdepth);
+                alphabeta(board, ++depthdepth, -100000, 100000, true, true);
+                Console.WriteLine(depthdepth);
             }
         }
         catch
         {
             //Console.WriteLine(evaluatedPos);
-            Console.WriteLine(depthdepth);
+            //Console.WriteLine(depthdepth);
             return bestRootMove;
         }
     }

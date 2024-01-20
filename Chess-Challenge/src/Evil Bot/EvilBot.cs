@@ -8,14 +8,14 @@ public class EvilBot : IChessBot
     struct Transposition
     {
         public ulong zobristHash;
-        public float evaluation;
+        public int evaluation;
         public sbyte depth;
         public byte flag;
     }
     public Move Think(Board board, Timer timer)
     {
-        int[] pieceValues = { 0, 1, 3, 3, 5, 9, 0 };
-        decimal eval = 0;
+        int[] pieceValues = { 0, 100, 300, 300, 500, 900, 0 };
+        int eval = 0;
         int[] pawnTable = {0,  0,  0,  0,  0,  0,  0,  0,
 50, 50, 50, 50, 50, 50, 50, 50,
 10, 10, 20, 30, 30, 20, 10, 10,
@@ -75,18 +75,17 @@ public class EvilBot : IChessBot
         int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
         Move bestRootMove = new();
         int depthdepth = 0;
-        float score = new();
+        int score = new();
         int endKingTableAmount = 6;
         int evaluatedPos = 0;
 
 
-        float alphabeta(Board board, int depth, float alpha, float beta, bool root)
+        int alphabeta(Board board, int depth, int alpha, int beta, bool root, bool lastMoveWasNotNull)
         {
             evaluatedPos++;
-            float startingAlpha = alpha;
-            float bestEval = float.MinValue;
+            int startingAlpha = alpha;
+            int bestEval = -100000;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
-
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 if (tp.flag == 1 || tp.flag == 2 && tp.evaluation >= beta || tp.flag == 3 && tp.evaluation <= alpha)
@@ -95,6 +94,18 @@ public class EvilBot : IChessBot
                 }
             }
             if (depth == 0) return Quiesce(alpha, beta, board);
+            if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2)
+            {
+                board.TrySkipTurn();
+                int R = 2;
+                int nullSearchScore = -alphabeta(board, depth - R, -beta, 1 - beta, false, false);
+                board.UndoSkipTurn();
+                if (nullSearchScore >= beta)
+                {
+                    //Console.WriteLine("get pruned");
+                    return nullSearchScore;
+                }
+            }
             foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
@@ -114,7 +125,7 @@ public class EvilBot : IChessBot
                 }
                 else
                 {
-                    score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                    score = -alphabeta(board, depth - 1, -beta, -alpha, false, lastMoveWasNotNull);
 
                 }
                 board.UndoMove(move);
@@ -137,20 +148,20 @@ public class EvilBot : IChessBot
             tp.evaluation = bestEval;
             tp.zobristHash = board.ZobristKey;
             if (alpha <= startingAlpha)
-                tp.flag = 3; //upper bound
+                tp.flag = 3;
             else if (alpha >= beta)
-                tp.flag = 2; //lower bound
+                tp.flag = 2;
             else tp.flag = 1;
             tp.depth = (sbyte)depth;
             return alpha;
         }
 
-        float evaluation(Board board, int depth)
+        int evaluation(Board board, int depth)
         {
             eval = 0;
             if (board.IsInCheckmate())
             {
-                eval = 1000000 - (depthdepth - depth);
+                eval = 10000 - (depthdepth - depth);
             }
             else if (board.IsDraw())
             {
@@ -169,28 +180,28 @@ public class EvilBot : IChessBot
                             switch ((int)pieceList2.GetPiece(i).PieceType)
                             {
                                 case 1:
-                                    eval += pawnTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval += pawnTable[63 - pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 2:
-                                    eval += knightTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval += knightTable[63 - pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 3:
-                                    eval += bishopTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval += bishopTable[63 - pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 4:
-                                    eval += rookTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval += rookTable[63 - pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 5:
-                                    eval += queenTable[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval += queenTable[63 - pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 6:
                                     if (minorPiecesAmount <= endKingTableAmount)
                                     {
-                                        eval += kingTableEnd[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                        eval += kingTableEnd[63 - pieceList2.GetPiece(i).Square.Index];
                                     }
                                     else
                                     {
-                                        eval += kingTableMid[63 - pieceList2.GetPiece(i).Square.Index] / 100m;
+                                        eval += kingTableMid[63 - pieceList2.GetPiece(i).Square.Index];
                                     }
                                     break;
                             }
@@ -201,28 +212,28 @@ public class EvilBot : IChessBot
                             switch ((int)pieceList2.GetPiece(i).PieceType)
                             {
                                 case 1:
-                                    eval -= pawnTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval -= pawnTable[pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 2:
-                                    eval -= knightTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval -= knightTable[pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 3:
-                                    eval -= bishopTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval -= bishopTable[pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 4:
-                                    eval -= rookTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval -= rookTable[pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 5:
-                                    eval -= queenTable[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                    eval -= queenTable[pieceList2.GetPiece(i).Square.Index];
                                     break;
                                 case 6:
                                     if (minorPiecesAmount <= endKingTableAmount)
                                     {
-                                        eval -= kingTableEnd[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                        eval -= kingTableEnd[pieceList2.GetPiece(i).Square.Index];
                                     }
                                     else
                                     {
-                                        eval -= kingTableMid[pieceList2.GetPiece(i).Square.Index] / 100m;
+                                        eval -= kingTableMid[pieceList2.GetPiece(i).Square.Index];
                                     }
                                     break;
                             }
@@ -253,17 +264,17 @@ public class EvilBot : IChessBot
                 int blackKingDisFromCenter = blackKingDisToCenterRank + blackKingDisToCenterFile;
                 float kingEval = whiteKingDisFromCenter - blackKingDisFromCenter;
             }*/
-            return (float)eval;
+            return eval;
         }
-        float Quiesce(float alpha, float beta, Board board)
+        int Quiesce(int alpha, int beta, Board board)
         {
-            float stand_pat = evaluation(board, 0);
+            int stand_pat = evaluation(board, 0);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
             foreach (Move move in board.GetLegalMoves(true))
             {
                 board.MakeMove(move);
-                float score = -Quiesce(-beta, -alpha, board);
+                int score = -Quiesce(-beta, -alpha, board);
                 board.UndoMove(move);
                 if (score >= beta) return beta;
                 if (score > alpha) alpha = score;
@@ -272,13 +283,13 @@ public class EvilBot : IChessBot
 
         }
 
-        Console.WriteLine("V1.7");
+        Console.WriteLine("V1.8");
         try
         {
             for (; ; )
             {
-                alphabeta(board, ++depthdepth, float.NegativeInfinity, float.PositiveInfinity, true);
-                //Console.WriteLine(depthdepth);
+                alphabeta(board, ++depthdepth, -100000, 100000, true, true);
+                Console.WriteLine(depthdepth);
             }
         }
         catch
