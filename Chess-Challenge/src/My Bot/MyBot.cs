@@ -75,7 +75,7 @@ public class MyBot : IChessBot
         int depthdepth = 0;
         int score = new();
 
-
+        // alpha beta pruning
         int alphabeta(Board board, int depth, int alpha, int beta, bool root, bool lastMoveWasNotNull)
         {
             int startingAlpha = alpha;
@@ -83,12 +83,14 @@ public class MyBot : IChessBot
             ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
+                // check if theres a hit in transposition table
                 if (tp.flag == 1 || tp.flag == 2 && tp.evaluation >= beta || tp.flag == 3 && tp.evaluation <= alpha)
                 {
                     return tp.evaluation;
                 }
             }
             if (depth == 0) return Quiesce(alpha, beta, board);
+            // null move pruning
             if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2)
             {
                 board.TrySkipTurn();
@@ -106,6 +108,7 @@ public class MyBot : IChessBot
                 {
                     if (depth == depthdepth)
                     {
+                        // mate in 1
                         bestRootMove = move;
                         Console.WriteLine(bestRootMove);
                         Convert.ToUInt32(-1);
@@ -135,9 +138,11 @@ public class MyBot : IChessBot
                         bestRootMove = move;
                     }
                 }
+                // time management (1/30 of remaining time)
                 if (!bestRootMove.IsNull)
                     Convert.ToUInt32(timer.MillisecondsRemaining - 30 * timer.MillisecondsElapsedThisTurn);
             }
+            // save position into transposition table
             tp.evaluation = bestEval;
             tp.zobristHash = board.ZobristKey;
             if (alpha <= startingAlpha)
@@ -160,6 +165,7 @@ public class MyBot : IChessBot
                 PieceList[] pieceList = board.GetAllPieceLists();
                 foreach (PieceList pieceList2 in pieceList)
                 {
+                    // dont mind this spaghetti code
                     for (int i = 0; i < pieceList2.Count; i++)
                     {
                         if (pieceList2.IsWhitePieceList)
