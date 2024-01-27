@@ -277,8 +277,8 @@ public class MyBot : IChessBot
                 }
             }
             if (depth == 0) return Quiesce(alpha, beta, board);
-            // null move pruning
-            if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && false)
+            // null move pruning doesnt work right now
+            /*if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && false)
             {
                 board.TrySkipTurn();
                 int nullSearchScore = -alphabeta(board, depth - 2, -beta, 1 - beta, false, false);
@@ -287,7 +287,7 @@ public class MyBot : IChessBot
                 {
                     return nullSearchScore;
                 }
-            }
+            }*/
             foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
