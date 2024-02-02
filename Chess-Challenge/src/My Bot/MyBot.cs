@@ -1,11 +1,10 @@
 ﻿using ChessChallenge.API;
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 
 public class MyBot : IChessBot
 {
-    Transposition[] tpt = new Transposition[0x7FFFFF + 1];
+    Transposition[] tpt = new Transposition[0x3FFFFFF + 1];
     struct Transposition
     {
         public ulong zobristHash;
@@ -136,7 +135,7 @@ public class MyBot : IChessBot
  -9,   7,  16,  23,  21,  11,  -3, -19,
 -17,  -5,   4,  14,  13,   4, -11, -27,
 -43, -24, -14, -28, -11, -21, -34, -53
-}; 
+};
         int[] black_mg_pawn_table = {
       0,   0,   0,   0,   0,   0,  0,   0,
      98, 134,  61,  95,  68, 126, 34, -11,
@@ -257,34 +256,51 @@ public class MyBot : IChessBot
     -27, -11,   4,  13,  14,   4,  -5, -17,
     -53, -34, -21, -11, -28, -14, -24, -43
 };
-
+        /*int currentPhase = 24;
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, true)) * 2;
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, true)) * 4;
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, false));
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, false));
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, false)) * 2;
+        currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, false)) * 4;
+        currentPhase = (currentPhase * 256 + 12) / 24;
+        Console.WriteLine(currentPhase);*/
         Move bestRootMove = new();
         int depthdepth = 1;
         int score = new();
-
         // alpha beta pruning
-        int alphabeta(Board board, int depth, int alpha, int beta, bool root, bool lastMoveWasNotNull)
+        int alphabeta(Board board, int depth, int alpha, int beta, bool root)
         {
             int startingAlpha = alpha;
             int bestEval = -100000;
-            ref Transposition tp = ref tpt[board.ZobristKey & 0x7FFFFF];
+            ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFFF];
+            int extension = 0;
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 // check if theres a hit in transposition table
+                //Console.WriteLine("hit");
                 if (tp.flag == 1 || tp.flag == 2 && tp.evaluation >= beta || tp.flag == 3 && tp.evaluation <= alpha)
                 {
                     return tp.evaluation;
                 }
             }
+            if (board.IsInCheck())
+            {
+                //Console.WriteLine("get extended");
+                //extension++;
+            }
             if (depth == 0) return Quiesce(alpha, beta, board);
-            // null move pruning doesnt work right now
-            /*if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && false)
+            // null move pruning - doesnt work right now
+            /*if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && currentPhase < 192)
             {
                 board.TrySkipTurn();
                 int nullSearchScore = -alphabeta(board, depth - 2, -beta, 1 - beta, false, false);
                 board.UndoSkipTurn();
                 if (nullSearchScore >= beta)
                 {
+                    //Console.WriteLine("pruned");
                     return nullSearchScore;
                 }
             }*/
@@ -293,7 +309,7 @@ public class MyBot : IChessBot
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
                 {
-                    if (depth == depthdepth)
+                    if (root)
                     {
                         // mate in 1
                         bestRootMove = move;
@@ -308,7 +324,7 @@ public class MyBot : IChessBot
                 }
                 else
                 {
-                    score = -alphabeta(board, depth - 1, -beta, -alpha, false, lastMoveWasNotNull);
+                    score = -alphabeta(board, depth - 1 + extension, -beta, -alpha, false);
                 }
                 board.UndoMove(move);
                 if (score > bestEval) bestEval = score;
@@ -322,6 +338,7 @@ public class MyBot : IChessBot
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
+                        Console.WriteLine(bestRootMove);
                     }
                 }
                 // time management (1/30 of remaining time)
@@ -343,7 +360,6 @@ public class MyBot : IChessBot
         int evaluation(Board board, int depth)
         {
             int eval = 0;
-            int minorPiecesAmount = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true)) - BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Pawn, true));
             if (board.IsInCheckmate())
                 eval = 10000 - (depthdepth - depth);
             else if (!board.IsDraw())
@@ -496,17 +512,17 @@ public class MyBot : IChessBot
 
         }
 
-        Console.WriteLine("V1.8");
+        Console.WriteLine("V1.11");
         try
         {
-            for (; ; )
+            for (; ; depthdepth++)
             {
                 //iterative deepening
-                int currentEval = alphabeta(board, ++depthdepth, -100000, 100000, true, true);
+                int currentEval = alphabeta(board, depthdepth, -100000, 100000, true);
                 if (!board.IsWhiteToMove)
                     currentEval *= -1;
-                Console.WriteLine(currentEval);
-                //Console.WriteLine(depthdepth);
+                //Console.WriteLine(currentEval / 100f);
+                Console.WriteLine(depthdepth);
 
             }
         }
@@ -514,5 +530,5 @@ public class MyBot : IChessBot
         {
             return bestRootMove;
         }
-        }
+    }
 }
