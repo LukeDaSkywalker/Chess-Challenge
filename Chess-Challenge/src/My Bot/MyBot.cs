@@ -276,7 +276,6 @@ public class MyBot : IChessBot
             int startingAlpha = alpha;
             int bestEval = -100000;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFFF];
-            int extension = 0;
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 // check if theres a hit in transposition table
@@ -286,12 +285,8 @@ public class MyBot : IChessBot
                     return tp.evaluation;
                 }
             }
-            if (board.IsInCheck())
-            {
-                //Console.WriteLine("get extended");
-                //extension++;
-            }
             if (depth == 0) return Quiesce(alpha, beta, board);
+            bool bSearchPv = true;
             // null move pruning - doesnt work right now
             /*if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && currentPhase < 192)
             {
@@ -324,7 +319,18 @@ public class MyBot : IChessBot
                 }
                 else
                 {
-                    score = -alphabeta(board, depth - 1 + extension, -beta, -alpha, false);
+                    if (bSearchPv)
+                    {
+                        score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                    }
+                    else
+                    {
+                        score = -alphabeta(board, depth - 1, -alpha - 1, -alpha, false);
+                        if (score > alpha)
+                        {
+                            score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                        }
+                    }
                 }
                 board.UndoMove(move);
                 if (score > bestEval) bestEval = score;
@@ -335,6 +341,7 @@ public class MyBot : IChessBot
                 if (score > alpha)
                 {
                     alpha = score;
+                    bSearchPv = false;
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
@@ -512,7 +519,7 @@ public class MyBot : IChessBot
 
         }
 
-        Console.WriteLine("V1.11");
+        Console.WriteLine("V1.12");
         try
         {
             for (; ; depthdepth++)
