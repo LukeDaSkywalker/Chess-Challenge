@@ -341,13 +341,13 @@ public class MyBot : IChessBot
                 if (score > alpha)
                 {
                     alpha = score;
-                    bSearchPv = false;
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
-                        Console.WriteLine(bestRootMove);
+                        //Console.WriteLine(bestRootMove);
                     }
                 }
+                bSearchPv = false;
                 // time management (1/30 of remaining time)
                 if (!bestRootMove.IsNull)
                     Convert.ToUInt32(timer.MillisecondsRemaining - 30 * timer.MillisecondsElapsedThisTurn);
@@ -518,23 +518,22 @@ public class MyBot : IChessBot
             return alpha;
 
         }
-
+        int currentEval = 0;
         Console.WriteLine("V1.12");
         try
         {
             for (; ; depthdepth++)
             {
                 //iterative deepening
-                int currentEval = alphabeta(board, depthdepth, -100000, 100000, true);
+                currentEval = alphabeta(board, depthdepth, -100000, 100000, true);
                 if (!board.IsWhiteToMove)
                     currentEval *= -1;
-                //Console.WriteLine(currentEval / 100f);
-                Console.WriteLine(depthdepth);
-
             }
         }
         catch
         {
+            Console.WriteLine(currentEval/100f);
+            Console.WriteLine(depthdepth);
             return bestRootMove;
         }
     }
