@@ -256,6 +256,10 @@ public class MyBot : IChessBot
     -27, -11,   4,  13,  14,   4,  -5, -17,
     -53, -34, -21, -11, -28, -14, -24, -43
 };
+        int[][] white_mg_table = { Array.Empty<int>(),mg_pawn_table, mg_knight_table, mg_bishop_table, mg_rook_table, mg_queen_table, mg_king_table};
+        int[][] black_mg_table = { Array.Empty<int>(), black_mg_pawn_table, black_mg_knight_table, black_mg_bishop_table, black_mg_rook_table, black_mg_queen_table, black_mg_king_table};
+        int[][] white_eg_table = { Array.Empty<int>(), eg_pawn_table, eg_knight_table, eg_bishop_table, eg_rook_table, eg_queen_table, eg_king_table};
+        int[][] black_eg_table = { Array.Empty<int>(), black_eg_pawn_table, black_eg_knight_table, black_eg_bishop_table, black_eg_rook_table, black_eg_queen_table, black_eg_king_table};
         /*int currentPhase = 24;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
@@ -371,129 +375,27 @@ public class MyBot : IChessBot
                 eval = 10000 - (depthdepth - depth);
             else if (!board.IsDraw())
             {
-                int phase = 24;
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, true)) * 2;
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, true)) * 4;
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, false));
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, false));
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, false)) * 2;
-                phase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, false)) * 4;
-                phase = (phase * 256 + 12) / 24;
-                PieceList[] pieceList = board.GetAllPieceLists();
                 int opening = 0;
                 int endgame = 0;
-                foreach (PieceList pieceList2 in pieceList)
+                int phase = 24;
+                int[] phase_weight = { 0, 0, 1, 1, 2, 4, 0 };
+                for (int piece_type = 1; piece_type <= 6; piece_type++)
                 {
-                    // dont mind this spaghetti code
-                    for (int i = 0; i < pieceList2.Count; i++)
+                    ulong white_bb = board.GetPieceBitboard((PieceType)piece_type, true);
+                    ulong black_bb = board.GetPieceBitboard((PieceType)piece_type, false);
+                    while (white_bb > 0)
                     {
-                        if (pieceList2.IsWhitePieceList)
-                        {
-                            opening += mg_value[(int)pieceList2.GetPiece(i).PieceType];
-                            switch ((int)pieceList2.GetPiece(i).PieceType)
-                            {
-                                case 1:
-                                    opening += mg_pawn_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 2:
-                                    opening += mg_knight_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 3:
-                                    opening += mg_bishop_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 4:
-                                    opening += mg_rook_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 5:
-                                    opening += mg_queen_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 6:
-                                    opening += mg_king_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            opening -= mg_value[(int)pieceList2.GetPiece(i).PieceType];
-                            switch ((int)pieceList2.GetPiece(i).PieceType)
-                            {
-                                case 1:
-                                    opening -= black_mg_pawn_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 2:
-                                    opening -= black_mg_knight_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 3:
-                                    opening -= black_mg_bishop_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 4:
-                                    opening -= black_mg_rook_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 5:
-                                    opening -= black_mg_queen_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 6:
-                                    opening -= black_mg_king_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                            }
-                        }
-                    }
-                    if (phase == 0)
-                        continue;
-                    for (int i = 0; i < pieceList2.Count; i++)
+                        int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
+                        opening += mg_value[piece_type] + white_mg_table[piece_type][63-sq];
+                        endgame += eg_value[piece_type] + white_eg_table[piece_type][63-sq];
+                        phase -= phase_weight[piece_type];
+                    } 
+                    while (black_bb > 0)
                     {
-                        if (pieceList2.IsWhitePieceList)
-                        {
-                            endgame += eg_value[(int)pieceList2.GetPiece(i).PieceType];
-                            switch ((int)pieceList2.GetPiece(i).PieceType)
-                            {
-                                case 1:
-                                    endgame += eg_pawn_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 2:
-                                    endgame += eg_knight_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 3:
-                                    endgame += eg_bishop_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 4:
-                                    endgame += eg_rook_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 5:
-                                    endgame += eg_queen_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 6:
-                                    endgame += eg_king_table[63 - pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            endgame -= eg_value[(int)pieceList2.GetPiece(i).PieceType];
-                            switch ((int)pieceList2.GetPiece(i).PieceType)
-                            {
-                                case 1:
-                                    endgame -= black_eg_pawn_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 2:
-                                    endgame -= black_eg_knight_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 3:
-                                    endgame -= black_eg_bishop_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 4:
-                                    endgame -= black_eg_rook_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 5:
-                                    endgame -= black_eg_queen_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                                case 6:
-                                    endgame -= black_eg_king_table[pieceList2.GetPiece(i).Square.Index];
-                                    break;
-                            }
-                        }
+                        int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
+                        opening -= mg_value[piece_type] + black_mg_table[piece_type][sq];
+                        endgame -= eg_value[piece_type] + black_eg_table[piece_type][sq];
+                        phase -= phase_weight[piece_type];
                     }
                 }
                 eval = ((opening * (256 - phase)) + (endgame * phase)) / 256;
@@ -519,7 +421,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.12.1");
+        Console.WriteLine("V1.13");
         try
         {
             for (; ; depthdepth++)
