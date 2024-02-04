@@ -341,13 +341,13 @@ public class MyBot : IChessBot
                 if (score > alpha)
                 {
                     alpha = score;
+                    bSearchPv = false;
                     if (depth == depthdepth)
                     {
                         bestRootMove = move;
                         //Console.WriteLine(bestRootMove);
                     }
                 }
-                bSearchPv = false;
                 // time management (1/30 of remaining time)
                 if (!bestRootMove.IsNull)
                     Convert.ToUInt32(timer.MillisecondsRemaining - 30 * timer.MillisecondsElapsedThisTurn);
@@ -519,7 +519,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.12");
+        Console.WriteLine("V1.12.1");
         try
         {
             for (; ; depthdepth++)
