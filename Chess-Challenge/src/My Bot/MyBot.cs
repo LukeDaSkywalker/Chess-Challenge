@@ -256,10 +256,10 @@ public class MyBot : IChessBot
     -27, -11,   4,  13,  14,   4,  -5, -17,
     -53, -34, -21, -11, -28, -14, -24, -43
 };
-        int[][] white_mg_table = { Array.Empty<int>(),mg_pawn_table, mg_knight_table, mg_bishop_table, mg_rook_table, mg_queen_table, mg_king_table};
-        int[][] black_mg_table = { Array.Empty<int>(), black_mg_pawn_table, black_mg_knight_table, black_mg_bishop_table, black_mg_rook_table, black_mg_queen_table, black_mg_king_table};
-        int[][] white_eg_table = { Array.Empty<int>(), eg_pawn_table, eg_knight_table, eg_bishop_table, eg_rook_table, eg_queen_table, eg_king_table};
-        int[][] black_eg_table = { Array.Empty<int>(), black_eg_pawn_table, black_eg_knight_table, black_eg_bishop_table, black_eg_rook_table, black_eg_queen_table, black_eg_king_table};
+        int[][] white_mg_table = { Array.Empty<int>(), mg_pawn_table, mg_knight_table, mg_bishop_table, mg_rook_table, mg_queen_table, mg_king_table };
+        int[][] black_mg_table = { Array.Empty<int>(), black_mg_pawn_table, black_mg_knight_table, black_mg_bishop_table, black_mg_rook_table, black_mg_queen_table, black_mg_king_table };
+        int[][] white_eg_table = { Array.Empty<int>(), eg_pawn_table, eg_knight_table, eg_bishop_table, eg_rook_table, eg_queen_table, eg_king_table };
+        int[][] black_eg_table = { Array.Empty<int>(), black_eg_pawn_table, black_eg_knight_table, black_eg_bishop_table, black_eg_rook_table, black_eg_queen_table, black_eg_king_table };
         /*int currentPhase = 24;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
@@ -386,10 +386,10 @@ public class MyBot : IChessBot
                     while (white_bb > 0)
                     {
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
-                        opening += mg_value[piece_type] + white_mg_table[piece_type][63-sq];
-                        endgame += eg_value[piece_type] + white_eg_table[piece_type][63-sq];
+                        opening += mg_value[piece_type] + white_mg_table[piece_type][63 - sq];
+                        endgame += eg_value[piece_type] + white_eg_table[piece_type][63 - sq];
                         phase -= phase_weight[piece_type];
-                    } 
+                    }
                     while (black_bb > 0)
                     {
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
@@ -398,6 +398,7 @@ public class MyBot : IChessBot
                         phase -= phase_weight[piece_type];
                     }
                 }
+                phase = (phase * 256 + 12) / 24;
                 eval = ((opening * (256 - phase)) + (endgame * phase)) / 256;
                 if (!board.IsWhiteToMove)
                     eval *= -1;
@@ -421,6 +422,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
+        
         Console.WriteLine("V1.13");
         try
         {
@@ -430,12 +432,12 @@ public class MyBot : IChessBot
                 currentEval = alphabeta(board, depthdepth, -100000, 100000, true);
                 if (!board.IsWhiteToMove)
                     currentEval *= -1;
+                Console.WriteLine(depthdepth);
             }
         }
         catch
         {
             Console.WriteLine(currentEval/100f);
-            Console.WriteLine(depthdepth);
             return bestRootMove;
         }
     }
