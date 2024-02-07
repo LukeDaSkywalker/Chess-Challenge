@@ -16,6 +16,7 @@ public class MyBot : IChessBot
     {
         int[] mg_value = { 0, 82, 337, 365, 477, 1025, 0 };
         int[] eg_value = { 0, 94, 281, 297, 512, 936, 0 };
+        int[] pieceValue = { 0, 100, 300, 300, 500, 900, 0 };
         int[] mg_pawn_table = {
       0,   0,   0,   0,   0,   0,  0,   0,
     -11,  34, 126,  68,  95,  61, 134,  98,
@@ -407,11 +408,15 @@ public class MyBot : IChessBot
         }
         int Quiesce(int alpha, int beta, Board board)
         {
-            int stand_pat = evaluation(board, 0);
+            int stand_pat = evaluation(board, -1);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
             foreach (Move move in board.GetLegalMoves(true))
             {
+                if (stand_pat + pieceValue[(int)move.CapturePieceType] + 200 < alpha)
+                {
+                    continue;
+                }
                 board.MakeMove(move);
                 int score = -Quiesce(-beta, -alpha, board);
                 board.UndoMove(move);
@@ -423,7 +428,7 @@ public class MyBot : IChessBot
         }
         int currentEval = 0;
         
-        Console.WriteLine("V1.13");
+        Console.WriteLine("V1.14");
         try
         {
             for (; ; depthdepth++)
@@ -438,6 +443,7 @@ public class MyBot : IChessBot
         catch
         {
             Console.WriteLine(currentEval/100f);
+            //Console.WriteLine(depthdepth);
             return bestRootMove;
         }
     }
