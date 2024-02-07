@@ -305,7 +305,7 @@ public class MyBot : IChessBot
             }*/
             System.Span<Move> moves = stackalloc Move[256];
             board.GetLegalMovesNonAlloc(ref moves);
-            foreach (Move move in sortedMoves(moves))
+            foreach (Move move in moves.ToArray().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
             {
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
@@ -414,7 +414,7 @@ public class MyBot : IChessBot
             if (stand_pat > alpha) alpha = stand_pat;
             System.Span<Move> moves = stackalloc Move[256];
             board.GetLegalMovesNonAlloc(ref moves, true);
-            foreach (Move move in moves)
+            foreach (Move move in moves.ToArray().OrderByDescending(move => (move.CapturePieceType - move.MovePieceType)))
             {
                 if (stand_pat + pieceValue[(int)move.CapturePieceType] + 200 < alpha)
                 {
@@ -430,34 +430,6 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Move[] sortedMoves(System.Span<Move> moves)
-        {
-            int[] moveValues = new int[moves.Length];
-            int i = 0;
-            foreach (Move move in moves)
-            {
-                if (move.Equals(bestRootMove))
-                {
-                    moveValues[i] = 0;
-                }
-                else if (move.IsPromotion)
-                {
-                    moveValues[i] = 10 - (int)move.PromotionPieceType;
-                }
-                else if (move.IsCapture)
-                {
-                    moveValues[i] = pieceValue[(int)move.CapturePieceType] - pieceValue[(int)move.MovePieceType] + 20000;
-                }
-                else
-                {
-                    moveValues[i] = 100000 - pieceValue[(int)move.MovePieceType];
-                }
-                i++;
-            }
-            Move[] sortedMoves = moves.ToArray();
-            Array.Sort(moveValues, sortedMoves);
-            return sortedMoves;
-        }
         Console.WriteLine("V1.14");
         try
         {
