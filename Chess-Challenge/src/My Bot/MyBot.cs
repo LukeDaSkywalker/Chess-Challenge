@@ -284,7 +284,6 @@ public class MyBot : IChessBot
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 // check if theres a hit in transposition table
-                //Console.WriteLine("hit");
                 if (tp.flag == 1 || tp.flag == 2 && tp.evaluation >= beta || tp.flag == 3 && tp.evaluation <= alpha)
                 {
                     return tp.evaluation;
@@ -304,7 +303,9 @@ public class MyBot : IChessBot
                     return nullSearchScore;
                 }
             }*/
-            foreach (Move move in board.GetLegalMoves().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
+            System.Span<Move> moves = stackalloc Move[256];
+            board.GetLegalMovesNonAlloc(ref moves);
+            foreach (Move move in sortedMoves(moves))
             {
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
@@ -411,7 +412,9 @@ public class MyBot : IChessBot
             int stand_pat = evaluation(board, -1);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
-            foreach (Move move in board.GetLegalMoves(true))
+            System.Span<Move> moves = stackalloc Move[256];
+            board.GetLegalMovesNonAlloc(ref moves, true);
+            foreach (Move move in moves)
             {
                 if (stand_pat + pieceValue[(int)move.CapturePieceType] + 200 < alpha)
                 {
@@ -427,7 +430,34 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        
+        Move[] sortedMoves(System.Span<Move> moves)
+        {
+            int[] moveValues = new int[moves.Length];
+            int i = 0;
+            foreach (Move move in moves)
+            {
+                if (move.Equals(bestRootMove))
+                {
+                    moveValues[i] = 0;
+                }
+                else if (move.IsPromotion)
+                {
+                    moveValues[i] = 10 - (int)move.PromotionPieceType;
+                }
+                else if (move.IsCapture)
+                {
+                    moveValues[i] = pieceValue[(int)move.CapturePieceType] - pieceValue[(int)move.MovePieceType] + 20000;
+                }
+                else
+                {
+                    moveValues[i] = 100000 - pieceValue[(int)move.MovePieceType];
+                }
+                i++;
+            }
+            Move[] sortedMoves = moves.ToArray();
+            Array.Sort(moveValues, sortedMoves);
+            return sortedMoves;
+        }
         Console.WriteLine("V1.14");
         try
         {
@@ -442,7 +472,7 @@ public class MyBot : IChessBot
         }
         catch
         {
-            Console.WriteLine(currentEval/100f);
+            Console.WriteLine(currentEval / 100f);
             //Console.WriteLine(depthdepth);
             return bestRootMove;
         }
