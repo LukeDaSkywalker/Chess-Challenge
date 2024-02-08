@@ -261,7 +261,7 @@ public class MyBot : IChessBot
         int[][] black_mg_table = { Array.Empty<int>(), black_mg_pawn_table, black_mg_knight_table, black_mg_bishop_table, black_mg_rook_table, black_mg_queen_table, black_mg_king_table };
         int[][] white_eg_table = { Array.Empty<int>(), eg_pawn_table, eg_knight_table, eg_bishop_table, eg_rook_table, eg_queen_table, eg_king_table };
         int[][] black_eg_table = { Array.Empty<int>(), black_eg_pawn_table, black_eg_knight_table, black_eg_bishop_table, black_eg_rook_table, black_eg_queen_table, black_eg_king_table };
-        /*int currentPhase = 24;
+        int currentPhase = 24;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, true)) * 2;
@@ -271,13 +271,14 @@ public class MyBot : IChessBot
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, false)) * 2;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, false)) * 4;
         currentPhase = (currentPhase * 256 + 12) / 24;
-        Console.WriteLine(currentPhase);*/
+        Console.WriteLine(currentPhase);
         Move bestRootMove = new();
         int depthdepth = 1;
         int score = new();
         // alpha beta pruning
-        int alphabeta(Board board, int depth, int alpha, int beta, bool root)
+        int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension)
         {
+            int extension2 = 0;
             int startingAlpha = alpha;
             int bestEval = -100000;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFFF];
@@ -317,7 +318,7 @@ public class MyBot : IChessBot
                         Console.WriteLine(bestRootMove);
                         Convert.ToUInt32(-1);
                     }
-                    score = evaluation(board, depth);
+                    score = evaluation(board, depth - extension);
                 }
                 else if (board.IsDraw())
                 {
@@ -325,19 +326,24 @@ public class MyBot : IChessBot
                 }
                 else
                 {
+                    if (board.IsInCheck() && extension < 16)
+                    {
+                        extension2++;
+                    }
                     if (bSearchPv)
                     {
-                        score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                        score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2);
                     }
                     else
                     {
-                        score = -alphabeta(board, depth - 1, -alpha - 1, -alpha, false);
+                        score = -alphabeta(board, depth - 1 + extension2, -alpha - 1, -alpha, false, extension + extension2);
                         if (score > alpha)
                         {
-                            score = -alphabeta(board, depth - 1, -beta, -alpha, false);
+                            score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2);
                         }
                     }
                 }
+                extension2 = 0;
                 board.UndoMove(move);
                 if (score > bestEval) bestEval = score;
                 if (score >= beta)
@@ -348,7 +354,7 @@ public class MyBot : IChessBot
                 {
                     alpha = score;
                     bSearchPv = false;
-                    if (depth == depthdepth)
+                    if (root)
                     {
                         bestRootMove = move;
                         //Console.WriteLine(bestRootMove);
@@ -369,7 +375,6 @@ public class MyBot : IChessBot
             tp.depth = (sbyte)depth;
             return alpha;
         }
-
         int evaluation(Board board, int depth)
         {
             int eval = 0;
@@ -436,15 +441,16 @@ public class MyBot : IChessBot
             for (; ; depthdepth++)
             {
                 //iterative deepening
-                currentEval = alphabeta(board, depthdepth, -100000, 100000, true);
+                currentEval = alphabeta(board, depthdepth, -100000, 100000, true, 0);
                 if (!board.IsWhiteToMove)
                     currentEval *= -1;
                 Console.WriteLine(depthdepth);
+                Console.WriteLine(currentEval / 100f);
             }
         }
         catch
         {
-            Console.WriteLine(currentEval / 100f);
+            //Console.WriteLine(currentEval / 100f);
             //Console.WriteLine(depthdepth);
             return bestRootMove;
         }
