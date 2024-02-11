@@ -416,9 +416,9 @@ public class MyBot : IChessBot
                         if (piece_type != 6) blackKingAlone = false;
                         else if (piece_type == 6 && blackKingAlone)
                         {
-                            Square blackKingSquare = board.GetKingSquare(true);
+                            Square blackKingSquare = board.GetKingSquare(false);
                             int blackKingDstFromCenter = Math.Max(3 - blackKingSquare.File, blackKingSquare.File - 4) + Math.Max(3 - blackKingSquare.Rank, blackKingSquare.Rank - 4);
-                            endgame -= blackKingDstFromCenter * 300;
+                            endgame += blackKingDstFromCenter * 300;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
                         opening -= mg_value[piece_type] + black_mg_table[piece_type][sq];
@@ -455,10 +455,6 @@ public class MyBot : IChessBot
             return alpha;
 
         }
-        int testeshiurawj = evaluation(board, 0); 
-        if (!board.IsWhiteToMove)
-            testeshiurawj *= -1;
-        Console.WriteLine("evaluation: " + testeshiurawj);
         int currentEval = 0;
         Console.WriteLine("V1.17.1");
         try
