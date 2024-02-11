@@ -455,6 +455,10 @@ public class MyBot : IChessBot
             return alpha;
 
         }
+        int testeshiurawj = evaluation(board, 0); 
+        if (!board.IsWhiteToMove)
+            testeshiurawj *= -1;
+        Console.WriteLine("evaluation: " + testeshiurawj);
         int currentEval = 0;
         Console.WriteLine("V1.17.1");
         try
