@@ -9,6 +9,7 @@ public class MyBot : IChessBot
     {
         public ulong zobristHash;
         public int evaluation;
+        public Move move;
         public sbyte depth;
         public byte flag;
     }
@@ -273,6 +274,7 @@ public class MyBot : IChessBot
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, false)) * 4;
         currentPhase = (currentPhase * 256 + 12) / 24;*/
         Move bestRootMove = new();
+        Move bestMove = new();
         int depthdepth = 1;
         int score = new();
         // alpha beta pruning
@@ -311,7 +313,25 @@ public class MyBot : IChessBot
             }
             System.Span<Move> moves = stackalloc Move[256];
             board.GetLegalMovesNonAlloc(ref moves);
-            foreach (Move move in moves.ToArray().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
+            Move[] sortedMoves = moves.ToArray();
+            int[] moveScores = new int[sortedMoves.Length];
+            int i = 0;
+            foreach (Move move in sortedMoves)
+            {
+                if (move == bestRootMove) moveScores[i] = 0;
+                else if (move == tp.move) moveScores[i] = 10;
+                else if (move.IsPromotion) moveScores[i] = (int)move.PromotionPieceType + 10;
+                else if (move.IsCapture) moveScores[i] = 100 - (move.CapturePieceType - move.MovePieceType);
+                else if (move.MovePieceType == PieceType.Queen) moveScores[i] = 200;
+                else if (move.MovePieceType == PieceType.Rook) moveScores[i] = 201;
+                else if (move.MovePieceType == PieceType.Knight) moveScores[i] = 202;
+                else if (move.MovePieceType == PieceType.Bishop) moveScores[i] = 203;
+                else if (move.MovePieceType == PieceType.Pawn) moveScores[i] = 204;
+                else if (move.MovePieceType == PieceType.King) moveScores[i] = 205;
+                i++;
+            }
+            Array.Sort(moveScores, sortedMoves);
+            foreach (Move move in sortedMoves)
             {
                 board.MakeMove(move);
                 if (board.IsInCheckmate())
@@ -350,7 +370,11 @@ public class MyBot : IChessBot
                 }
                 extension2 = 0;
                 board.UndoMove(move);
-                if (score > bestEval) bestEval = score;
+                if (score > bestEval)
+                {
+                    bestEval = score;
+                    bestMove = move;
+                }
                 if (score >= beta)
                 {
                     return beta;
@@ -372,6 +396,7 @@ public class MyBot : IChessBot
             // save position into transposition table
             tp.evaluation = bestEval;
             tp.zobristHash = board.ZobristKey;
+            tp.move = bestMove;
             if (alpha <= startingAlpha)
                 tp.flag = 3;
             else if (alpha >= beta)
@@ -384,7 +409,7 @@ public class MyBot : IChessBot
         {
             int eval = 0;
             if (board.IsInCheckmate())
-                eval = 10000 - (depthdepth - depth);
+                eval = 50000 - (depthdepth - depth);
             else if (!board.IsDraw())
             {
                 int opening = 0;
