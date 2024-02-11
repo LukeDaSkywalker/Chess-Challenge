@@ -4,7 +4,7 @@ using System.Linq;
 
 public class MyBot : IChessBot
 {
-    Transposition[] tpt = new Transposition[0x3FFFFFF + 1];
+    Transposition[] tpt = new Transposition[0x3FFFFF + 1];
     struct Transposition
     {
         public ulong zobristHash;
@@ -283,7 +283,7 @@ public class MyBot : IChessBot
             int extension2 = 0;
             int startingAlpha = alpha;
             int bestEval = -100000;
-            ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFFF];
+            ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFF];
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 // check if theres a hit in transposition table
@@ -481,7 +481,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.17.1");
+        Console.WriteLine("V1.17.2");
         try
         {
             for (; ; depthdepth++)
