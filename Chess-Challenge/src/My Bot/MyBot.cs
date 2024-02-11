@@ -262,7 +262,7 @@ public class MyBot : IChessBot
         int[][] black_mg_table = { Array.Empty<int>(), black_mg_pawn_table, black_mg_knight_table, black_mg_bishop_table, black_mg_rook_table, black_mg_queen_table, black_mg_king_table };
         int[][] white_eg_table = { Array.Empty<int>(), eg_pawn_table, eg_knight_table, eg_bishop_table, eg_rook_table, eg_queen_table, eg_king_table };
         int[][] black_eg_table = { Array.Empty<int>(), black_eg_pawn_table, black_eg_knight_table, black_eg_bishop_table, black_eg_rook_table, black_eg_queen_table, black_eg_king_table };
-        int currentPhase = 24;
+        /*int currentPhase = 24;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Knight, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, true));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, true)) * 2;
@@ -271,10 +271,11 @@ public class MyBot : IChessBot
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Bishop, false));
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Rook, false)) * 2;
         currentPhase -= BitboardHelper.GetNumberOfSetBits(board.GetPieceBitboard(PieceType.Queen, false)) * 4;
-        currentPhase = (currentPhase * 256 + 12) / 24;
+        currentPhase = (currentPhase * 256 + 12) / 24;*/
         Move bestRootMove = new();
         int depthdepth = 1;
         int score = new();
+        int prunes = 0;
         // alpha beta pruning
         int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension)
         {
@@ -304,6 +305,12 @@ public class MyBot : IChessBot
                     return nullSearchScore;
                 }
             }*/
+            int staticEval = evaluation(board, depth);
+            if (!board.IsInCheck() && depth <= 6 && staticEval - 100 * depth >= beta)
+            {
+                prunes++;
+                return staticEval;
+            }
             System.Span<Move> moves = stackalloc Move[256];
             board.GetLegalMovesNonAlloc(ref moves);
             foreach (Move move in moves.ToArray().OrderByDescending(move => (move == bestRootMove, move.CapturePieceType, move.PromotionPieceType - move.MovePieceType)))
@@ -435,7 +442,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.16");
+        Console.WriteLine("V1.17");
         try
         {
             for (; ; depthdepth++)
@@ -452,6 +459,7 @@ public class MyBot : IChessBot
         {
             Console.WriteLine(currentEval / 100f);
             Console.WriteLine(depthdepth);
+            Console.WriteLine(prunes);
             return bestRootMove;
         }
     }
