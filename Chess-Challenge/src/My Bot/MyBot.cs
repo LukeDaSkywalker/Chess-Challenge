@@ -275,7 +275,6 @@ public class MyBot : IChessBot
         Move bestRootMove = new();
         int depthdepth = 1;
         int score = new();
-        int prunes = 0;
         // alpha beta pruning
         int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension)
         {
@@ -308,7 +307,6 @@ public class MyBot : IChessBot
             int staticEval = evaluation(board, depth);
             if (!board.IsInCheck() && depth <= 6 && staticEval - 100 * depth >= beta)
             {
-                prunes++;
                 return staticEval;
             }
             System.Span<Move> moves = stackalloc Move[256];
@@ -392,6 +390,8 @@ public class MyBot : IChessBot
                 int opening = 0;
                 int endgame = 0;
                 int phase = 24;
+                bool whiteKingAlone = true;
+                bool blackKingAlone = true;
                 int[] phase_weight = { 0, 0, 1, 1, 2, 4, 0 };
                 for (int piece_type = 1; piece_type <= 6; piece_type++)
                 {
@@ -399,6 +399,13 @@ public class MyBot : IChessBot
                     ulong black_bb = board.GetPieceBitboard((PieceType)piece_type, false);
                     while (white_bb > 0)
                     {
+                        if (piece_type != 6) whiteKingAlone = false;
+                        else if (piece_type == 6 && whiteKingAlone)
+                        {
+                            Square whiteKingSquare = board.GetKingSquare(true);
+                            int whiteKingDstFromCenter = Math.Max(3 - whiteKingSquare.File, whiteKingSquare.File - 4) + Math.Max(3 - whiteKingSquare.Rank, whiteKingSquare.Rank - 4);
+                            endgame -= whiteKingDstFromCenter * 300;
+                        }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
                         opening += mg_value[piece_type] + white_mg_table[piece_type][63 - sq];
                         endgame += eg_value[piece_type] + white_eg_table[piece_type][63 - sq];
@@ -406,6 +413,13 @@ public class MyBot : IChessBot
                     }
                     while (black_bb > 0)
                     {
+                        if (piece_type != 6) blackKingAlone = false;
+                        else if (piece_type == 6 && blackKingAlone)
+                        {
+                            Square blackKingSquare = board.GetKingSquare(true);
+                            int blackKingDstFromCenter = Math.Max(3 - blackKingSquare.File, blackKingSquare.File - 4) + Math.Max(3 - blackKingSquare.Rank, blackKingSquare.Rank - 4);
+                            endgame -= blackKingDstFromCenter * 300;
+                        }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
                         opening -= mg_value[piece_type] + black_mg_table[piece_type][sq];
                         endgame -= eg_value[piece_type] + black_eg_table[piece_type][sq];
@@ -442,7 +456,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.17");
+        Console.WriteLine("V1.17.1");
         try
         {
             for (; ; depthdepth++)
@@ -459,7 +473,6 @@ public class MyBot : IChessBot
         {
             Console.WriteLine(currentEval / 100f);
             Console.WriteLine(depthdepth);
-            Console.WriteLine(prunes);
             return bestRootMove;
         }
     }
