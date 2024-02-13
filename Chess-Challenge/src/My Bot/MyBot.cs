@@ -1,5 +1,6 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.ComponentModel;
 using System.Linq;
 
 public class MyBot : IChessBot
@@ -277,6 +278,7 @@ public class MyBot : IChessBot
         Move bestMove = new();
         int depthdepth = 1;
         int score = new();
+        int prunes = 0;
         // alpha beta pruning
         int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension)
         {
@@ -307,8 +309,9 @@ public class MyBot : IChessBot
                 }
             }*/
             int staticEval = evaluation(board, depth);
-            if (!board.IsInCheck() && depth <= 6 && staticEval - 100 * depth >= beta)
+            if (!board.IsInCheck() && depth <= 6 && staticEval - 90 * depth >= beta)
             {
+                prunes++;
                 return staticEval;
             }
             System.Span<Move> moves = stackalloc Move[256];
@@ -432,6 +435,11 @@ public class MyBot : IChessBot
                             endgame -= whiteKingDstFromCenter * 300;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
+                        if (piece_type == 3 && sq > 0)
+                        {
+                            opening += 24;
+                            endgame += 58;
+                        }
                         opening += mg_value[piece_type] + white_mg_table[piece_type][63 - sq];
                         endgame += eg_value[piece_type] + white_eg_table[piece_type][63 - sq];
                         phase -= phase_weight[piece_type];
@@ -446,6 +454,11 @@ public class MyBot : IChessBot
                             endgame += blackKingDstFromCenter * 300;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
+                        if (piece_type == 3 && sq > 0)
+                        {
+                            opening -= 24;
+                            endgame -= 58;
+                        }
                         opening -= mg_value[piece_type] + black_mg_table[piece_type][sq];
                         endgame -= eg_value[piece_type] + black_eg_table[piece_type][sq];
                         phase -= phase_weight[piece_type];
@@ -481,7 +494,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.17.2");
+        Console.WriteLine("V1.17.4");
         try
         {
             for (; ; depthdepth++)
@@ -496,6 +509,7 @@ public class MyBot : IChessBot
         }
         catch
         {
+            Console.WriteLine("prunes: " + prunes);
             Console.WriteLine(currentEval / 100f);
             Console.WriteLine(depthdepth);
             return bestRootMove;
