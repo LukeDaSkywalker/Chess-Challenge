@@ -280,12 +280,13 @@ public class MyBot : IChessBot
         int score = new();
         int prunes = 0;
         // alpha beta pruning
-        int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension)
+        int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension, int ply)
         {
             int extension2 = 0;
             int startingAlpha = alpha;
             int bestEval = -100000;
             ref Transposition tp = ref tpt[board.ZobristKey & 0x3FFFFF];
+            bool isPvNode = !(alpha + 1 >= beta);
             if (!root && tp.zobristHash == board.ZobristKey && tp.depth >= depth)
             {
                 // check if theres a hit in transposition table
@@ -294,7 +295,7 @@ public class MyBot : IChessBot
                     return tp.evaluation;
                 }
             }
-            if (depth == 0) return Quiesce(alpha, beta, board);
+            if (depth == 0) return Quiesce(alpha, beta, board, ply);
             bool bSearchPv = true;
             // null move pruning - doesnt work right now
             /*if (!board.IsInCheck() && lastMoveWasNotNull && depth >= 2 && currentPhase < 192)
@@ -308,10 +309,10 @@ public class MyBot : IChessBot
                     return nullSearchScore;
                 }
             }*/
-            int staticEval = evaluation(board, depth);
-            if (!board.IsInCheck() && depth <= 6 && staticEval - 90 * depth >= beta)
+            int staticEval = evaluation(board, ply);
+            if (!isPvNode && !board.IsInCheck() && depth <= 6 && staticEval - 90 * depth >= beta)
             {
-                prunes++;
+                //prunes++;
                 return staticEval;
             }
             System.Span<Move> moves = stackalloc Move[256];
@@ -337,6 +338,13 @@ public class MyBot : IChessBot
             foreach (Move move in sortedMoves)
             {
                 board.MakeMove(move);
+                //staticEval = evaluation(board, ply);
+                //if (!isPvNode && depth <= 4 && staticEval + 300 + 100 * depth <= alpha)
+                //{
+                //    prunes++;
+                //    board.UndoMove(move);
+                //    continue;
+                //}
                 if (board.IsInCheckmate())
                 {
                     if (root)
@@ -346,7 +354,7 @@ public class MyBot : IChessBot
                         Console.WriteLine(bestRootMove);
                         Convert.ToUInt32(-1);
                     }
-                    score = evaluation(board, depth - extension);
+                    score = evaluation(board, ply);
                 }
                 else if (board.IsDraw())
                 {
@@ -360,14 +368,14 @@ public class MyBot : IChessBot
                     }
                     if (bSearchPv)
                     {
-                        score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2);
+                        score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2, ply + 1);
                     }
                     else
                     {
-                        score = -alphabeta(board, depth - 1 + extension2, -alpha - 1, -alpha, false, extension + extension2);
+                        score = -alphabeta(board, depth - 1 + extension2, -alpha - 1, -alpha, false, extension + extension2, ply + 1);
                         if (score > alpha)
                         {
-                            score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2);
+                            score = -alphabeta(board, depth - 1 + extension2, -beta, -alpha, false, extension + extension2, ply + 1);
                         }
                     }
                 }
@@ -408,11 +416,11 @@ public class MyBot : IChessBot
             tp.depth = (sbyte)depth;
             return alpha;
         }
-        int evaluation(Board board, int depth)
+        int evaluation(Board board, int ply)
         {
             int eval = 0;
             if (board.IsInCheckmate())
-                eval = 50000 - (depthdepth - depth);
+                eval = 50000 - ply;
             else if (!board.IsDraw())
             {
                 int opening = 0;
@@ -432,10 +440,12 @@ public class MyBot : IChessBot
                         {
                             Square whiteKingSquare = board.GetKingSquare(true);
                             int whiteKingDstFromCenter = Math.Max(3 - whiteKingSquare.File, whiteKingSquare.File - 4) + Math.Max(3 - whiteKingSquare.Rank, whiteKingSquare.Rank - 4);
-                            endgame -= whiteKingDstFromCenter * 300;
+                            //Square blackKingSquare = board.GetKingSquare(false);
+                            //int disBetweenKings = Math.Abs(blackKingSquare.File - whiteKingSquare.File) + Math.Abs(blackKingSquare.Rank - whiteKingSquare.Rank);
+                            //endgame -= whiteKingDstFromCenter * 300 + (14 - disBetweenKings) * 200;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
-                        if (piece_type == 3 && sq > 0)
+                        if (piece_type == 3 && white_bb > 0)
                         {
                             opening += 24;
                             endgame += 58;
@@ -451,10 +461,12 @@ public class MyBot : IChessBot
                         {
                             Square blackKingSquare = board.GetKingSquare(false);
                             int blackKingDstFromCenter = Math.Max(3 - blackKingSquare.File, blackKingSquare.File - 4) + Math.Max(3 - blackKingSquare.Rank, blackKingSquare.Rank - 4);
-                            endgame += blackKingDstFromCenter * 300;
+                            //Square whiteKingSquare = board.GetKingSquare(true);
+                            //int disBetweenKings = Math.Abs(whiteKingSquare.File - blackKingSquare.File) + Math.Abs(whiteKingSquare.Rank - blackKingSquare.Rank);
+                            //endgame += blackKingDstFromCenter * 300 + (14 - disBetweenKings) * 200;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
-                        if (piece_type == 3 && sq > 0)
+                        if (piece_type == 3 && black_bb > 0)
                         {
                             opening -= 24;
                             endgame -= 58;
@@ -471,9 +483,9 @@ public class MyBot : IChessBot
             }
             return eval;
         }
-        int Quiesce(int alpha, int beta, Board board)
+        int Quiesce(int alpha, int beta, Board board, int ply)
         {
-            int stand_pat = evaluation(board, -1);
+            int stand_pat = evaluation(board, ply);
             if (stand_pat >= beta) return beta;
             if (stand_pat > alpha) alpha = stand_pat;
             System.Span<Move> moves = stackalloc Move[256];
@@ -485,7 +497,7 @@ public class MyBot : IChessBot
                     continue;
                 }
                 board.MakeMove(move);
-                int score = -Quiesce(-beta, -alpha, board);
+                int score = -Quiesce(-beta, -alpha, board, ply + 1);
                 board.UndoMove(move);
                 if (score >= beta) return beta;
                 if (score > alpha) alpha = score;
@@ -500,7 +512,7 @@ public class MyBot : IChessBot
             for (; ; depthdepth++)
             {
                 //iterative deepening
-                currentEval = alphabeta(board, depthdepth, -100000, 100000, true, 0);
+                currentEval = alphabeta(board, depthdepth, -100000, 100000, true, 0, 0);
                 if (!board.IsWhiteToMove)
                     currentEval *= -1;
                 //Console.WriteLine(depthdepth);
