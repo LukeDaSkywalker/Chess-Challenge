@@ -445,11 +445,6 @@ public class MyBot : IChessBot
                             //endgame -= whiteKingDstFromCenter * 300 + (14 - disBetweenKings) * 200;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref white_bb);
-                        if (piece_type == 3 && white_bb > 0)
-                        {
-                            opening += 24;
-                            endgame += 58;
-                        }
                         opening += mg_value[piece_type] + white_mg_table[piece_type][63 - sq];
                         endgame += eg_value[piece_type] + white_eg_table[piece_type][63 - sq];
                         phase -= phase_weight[piece_type];
@@ -466,11 +461,6 @@ public class MyBot : IChessBot
                             //endgame += blackKingDstFromCenter * 300 + (14 - disBetweenKings) * 200;
                         }
                         int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref black_bb);
-                        if (piece_type == 3 && black_bb > 0)
-                        {
-                            opening -= 24;
-                            endgame -= 58;
-                        }
                         opening -= mg_value[piece_type] + black_mg_table[piece_type][sq];
                         endgame -= eg_value[piece_type] + black_eg_table[piece_type][sq];
                         phase -= phase_weight[piece_type];
@@ -506,7 +496,7 @@ public class MyBot : IChessBot
 
         }
         int currentEval = 0;
-        Console.WriteLine("V1.17.4");
+        Console.WriteLine("V1.18");
         try
         {
             for (; ; depthdepth++)
@@ -521,7 +511,7 @@ public class MyBot : IChessBot
         }
         catch
         {
-            Console.WriteLine("prunes: " + prunes);
+            //Console.WriteLine("prunes: " + prunes);
             Console.WriteLine(currentEval / 100f);
             Console.WriteLine(depthdepth);
             return bestRootMove;
