@@ -278,7 +278,6 @@ public class MyBot : IChessBot
         Move bestMove = new();
         int depthdepth = 1;
         int score = new();
-        int prunes = 0;
         // alpha beta pruning
         int alphabeta(Board board, int depth, int alpha, int beta, bool root, int extension, int ply)
         {
@@ -312,7 +311,6 @@ public class MyBot : IChessBot
             int staticEval = evaluation(board, ply);
             if (!isPvNode && !board.IsInCheck() && depth <= 6 && staticEval - 90 * depth >= beta)
             {
-                //prunes++;
                 return staticEval;
             }
             System.Span<Move> moves = stackalloc Move[256];
@@ -341,7 +339,6 @@ public class MyBot : IChessBot
                 //staticEval = evaluation(board, ply);
                 //if (!isPvNode && depth <= 4 && staticEval + 300 + 100 * depth <= alpha)
                 //{
-                //    prunes++;
                 //    board.UndoMove(move);
                 //    continue;
                 //}
@@ -511,7 +508,6 @@ public class MyBot : IChessBot
         }
         catch
         {
-            //Console.WriteLine("prunes: " + prunes);
             Console.WriteLine(currentEval / 100f);
             Console.WriteLine(depthdepth);
             return bestRootMove;
